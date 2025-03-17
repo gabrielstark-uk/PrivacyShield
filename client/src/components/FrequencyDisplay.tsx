@@ -26,8 +26,12 @@ export function FrequencyDisplay({ data, sampleRate = 48000 }: FrequencyDisplayP
     }));
 
     // Filter different frequency ranges
+    // Only include frequencies that are within the audible and near-ultrasonic range
     const sonicWaves = frequencies.filter(f => f.frequency >= 20 && f.frequency <= 20000);
-    const microwaveRange = frequencies.filter(f => f.frequency >= 300e6 && f.frequency <= 3e9);
+
+    // Note: Real microwave frequencies (300MHz-3GHz) cannot be captured by standard audio equipment
+    // This is just for visualization purposes in the demo
+    const highFrequencyRange = frequencies.filter(f => f.frequency >= 15000 && f.frequency <= 20000);
 
     const x = d3.scaleLog()
       .domain([20, sampleRate! / 2])
@@ -40,8 +44,8 @@ export function FrequencyDisplay({ data, sampleRate = 48000 }: FrequencyDisplayP
 
     // Create the line generator
     const line = d3.line<{frequency: number, amplitude: number}>()
-      .x(d => x(d.frequency))
-      .y(d => y(d.amplitude))
+      .x((d: { frequency: number; amplitude: number }) => x(d.frequency))
+      .y((d: { frequency: number; amplitude: number }) => y(d.amplitude))
       .curve(d3.curveMonotoneX);
 
     // Add the frequency line
@@ -53,11 +57,11 @@ export function FrequencyDisplay({ data, sampleRate = 48000 }: FrequencyDisplayP
       .attr("stroke", "hsl(var(--primary))")
       .attr("stroke-width", 2);
 
-    // Add microwave frequency line if detected
-    if (microwaveRange.length > 0) {
+    // Add high frequency line if detected (simulating V2K for demo)
+    if (highFrequencyRange.length > 0) {
       svg.append("path")
-        .datum(microwaveRange)
-        .attr("class", "microwave-line")
+        .datum(highFrequencyRange)
+        .attr("class", "high-frequency-line")
         .attr("d", line)
         .attr("fill", "none")
         .attr("stroke", "hsl(var(--destructive))")
@@ -67,16 +71,14 @@ export function FrequencyDisplay({ data, sampleRate = 48000 }: FrequencyDisplayP
     // Add frequency ranges markers
     const ranges = [
       { min: 2000, max: 10000, label: "Sound Cannon Range" },
-      { min: 300e6, max: 3e9, label: "V2K Range" }
+      { min: 15000, max: 20000, label: "High Frequency Range (V2K Simulation)" }
     ];
 
-    // Add frequency axis with ranges
+    // Add frequency axis with ranges - limit to audible and near-ultrasonic range
     const xAxis = d3.axisBottom(x)
-      .tickValues([20, 100, 1000, 10000, 100000, 1e6, 10e6, 100e6, 1e9])
-      .tickFormat(d => {
-        const freq = Number(d);
-        if (freq >= 1e9) return `${freq/1e9}GHz`;
-        if (freq >= 1e6) return `${freq/1e6}MHz`;
+      .tickValues([20, 100, 1000, 10000, 20000])
+      .tickFormat((d: d3.NumberValue) => {
+        const freq = Number(d.valueOf());
         if (freq >= 1000) return `${freq/1000}kHz`;
         return `${freq}Hz`;
       });
@@ -103,13 +105,15 @@ export function FrequencyDisplay({ data, sampleRate = 48000 }: FrequencyDisplayP
 
   return (
     <div className="w-full h-64 bg-card p-4">
-      <svg
-        ref={svgRef}
-        className="w-full h-full"
-        preserveAspectRatio="none"
-      />
+      <div className="h-48"> {/* Fixed height container for the SVG */}
+        <svg
+          ref={svgRef}
+          className="w-full h-full"
+          preserveAspectRatio="none"
+        />
+      </div>
       <div className="text-sm text-muted-foreground mt-2 text-center">
-        Extended Frequency Spectrum Analysis (20Hz - 3GHz)
+        Frequency Spectrum Analysis (20Hz - 20kHz)
       </div>
     </div>
   );

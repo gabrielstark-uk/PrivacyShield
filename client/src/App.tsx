@@ -13,31 +13,23 @@ function Navigation() {
     <nav className="border-b">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link href="/">
-            <a className="text-2xl font-bold flex items-center gap-2">
-              <RadioTower className="h-6 w-6" />
-              FrequencyGuard
-            </a>
+          <Link href="/" className="text-2xl font-bold flex items-center gap-2">
+            <RadioTower className="h-6 w-6" />
+            FrequencyGuard
           </Link>
-          
+
           <div className="flex gap-6">
-            <Link href="/">
-              <a className="flex items-center gap-2 hover:text-primary">
-                <RadioTower className="h-4 w-4" />
-                Analyzer
-              </a>
+            <Link href="/" className="flex items-center gap-2 hover:text-primary">
+              <RadioTower className="h-4 w-4" />
+              Analyzer
             </Link>
-            <Link href="/education">
-              <a className="flex items-center gap-2 hover:text-primary">
-                <BookOpen className="h-4 w-4" />
-                Education
-              </a>
+            <Link href="/education" className="flex items-center gap-2 hover:text-primary">
+              <BookOpen className="h-4 w-4" />
+              Education
             </Link>
-            <Link href="/reports">
-              <a className="flex items-center gap-2 hover:text-primary">
-                <FileText className="h-4 w-4" />
-                Reports
-              </a>
+            <Link href="/reports" className="flex items-center gap-2 hover:text-primary">
+              <FileText className="h-4 w-4" />
+              Reports
             </Link>
           </div>
         </div>
