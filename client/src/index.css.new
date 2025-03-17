@@ -23,13 +23,6 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
   --radius: 0.5rem;
-
-  /* Gradient colors */
-  --gradient-start: white;
-  --gradient-quarter: #E8F0FF;
-  --gradient-middle: #C5D9FF;
-  --gradient-three-quarters: #8FB3FF;
-  --gradient-end: #1E3A8A;
 }
 
 .dark {
@@ -52,28 +45,16 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 212.7 26.8% 83.9%;
-
-  /* Gradient colors for dark mode - same as light mode for now */
-  --gradient-start: white;
-  --gradient-quarter: #E8F0FF;
-  --gradient-middle: #C5D9FF;
-  --gradient-three-quarters: #8FB3FF;
-  --gradient-end: #1E3A8A;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply text-foreground font-sans antialiased;
-    background: linear-gradient(180deg,
-      var(--gradient-start) 0%,
-      var(--gradient-quarter) 25%,
-      var(--gradient-middle) 50%,
-      var(--gradient-three-quarters) 75%,
-      var(--gradient-end) 100%);
+    @apply bg-background text-foreground font-sans antialiased;
+    background: linear-gradient(180deg, white 0%, #E8F0FF 25%, #C5D9FF 50%, #8FB3FF 75%, #1E3A8A 100%);
     min-height: 100vh;
   }
 }
@@ -82,29 +63,8 @@
   .card {
     @apply bg-white/95 backdrop-blur-sm shadow-lg;
   }
-
+  
   .alert {
     @apply bg-white/95;
-  }
-
-  /* Custom gradient classes */
-  .gradient-bg {
-    background: linear-gradient(180deg,
-      var(--gradient-start) 0%,
-      var(--gradient-quarter) 25%,
-      var(--gradient-middle) 50%,
-      var(--gradient-three-quarters) 75%,
-      var(--gradient-end) 100%);
-  }
-
-  .gradient-text {
-    background: linear-gradient(90deg,
-      var(--gradient-middle) 0%,
-      var(--gradient-three-quarters) 50%,
-      var(--gradient-end) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    @apply font-bold;
   }
 }

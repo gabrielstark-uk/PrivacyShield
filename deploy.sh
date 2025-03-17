@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# Pre-deployment script for PrivacyShield
+# This script ensures there are no conflicting files before deploying to Vercel
+
+echo "=== PrivacyShield Deployment Script ==="
+echo "Running pre-deployment checks..."
+
+# Check for conflicting files
+if [ -f "api/index.js" ]; then
+  echo "WARNING: Found conflicting file: api/index.js"
+  echo "This file conflicts with api/index.ts and will cause deployment errors"
+  echo "Removing api/index.js to avoid conflicts..."
+  rm api/index.js
+  echo "File removed successfully"
+else
+  echo "No conflicting files found"
+fi
+
+# Run Vercel deployment
+echo "Starting Vercel deployment..."
+vercel "$@"
+
+echo "Deployment process completed"#!/bin/bash
+
 # PrivacyShield Deployment Script
 # This script builds and deploys the PrivacyShield application
 

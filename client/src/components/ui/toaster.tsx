@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, createContext, useContext, ReactNode } from "react";
+import {
+  ToastProvider,
+  ToastViewport,
+} from "@/components/ui/toast";
 
-interface Toast {
+interface LocalToast {
   id: string;
   title: string;
   description?: string;
@@ -8,16 +12,18 @@ interface Toast {
 }
 
 interface ToastContextType {
-  toasts: Toast[];
-  addToast: (toast: Omit<Toast, "id">) => void;
+  toasts: LocalToast[];
+  addToast: (toast: Omit<LocalToast, "id">) => void;
   removeToast: (id: string) => void;
 }
 
-// Create a simple toast hook
-export function useLocalToast() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-  const addToast = (toast: Omit<Toast, "id">) => {
+// Toast Provider component
+export function LocalToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<LocalToast[]>([]);
+
+  const addToast = (toast: Omit<LocalToast, "id">) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { ...toast, id }]);
 
@@ -31,11 +37,28 @@ export function useLocalToast() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  return { toast: addToast, toasts, removeToast };
+  return (
+    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+      {children}
+    </ToastContext.Provider>
+  );
+}
+
+// Hook to use toast
+export function useLocalToast() {
+  const context = useContext(ToastContext);
+  if (context === undefined) {
+    throw new Error("useLocalToast must be used within a LocalToastProvider");
+  }
+  return {
+    toast: context.addToast,
+    toasts: context.toasts,
+    removeToast: context.removeToast
+  };
 }
 
 // Toast component
-function LocalToast({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+function LocalToastComponent({ toast, onClose, children }: { toast: LocalToast; onClose: () => void; children?: ReactNode }) {
   const { title, description, type = "default" } = toast;
 
   const bgColor = {
@@ -53,6 +76,7 @@ function LocalToast({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <div>
         <h3 className="font-medium">{title}</h3>
         {description && <p className="text-sm mt-1">{description}</p>}
+        {children}
       </div>
       <button
         onClick={onClose}
@@ -64,30 +88,19 @@ function LocalToast({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   );
 }
 
-import { useToast } from "@/hooks/use-toast"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
-
 export function Toaster() {
-  const { toasts } = useLocalToast()
+  const { toasts, removeToast } = useLocalToast();
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        const { removeToast } = useLocalToast();
-        return (
-          <LocalToast key={id} toast={{ id, title, description, ...props }} onClose={() => removeToast(id)}>
-            {action}
-          </Toast>
-        )
-      })}
+      {toasts.map(({ id, title, description, ...props }) => (
+        <LocalToastComponent
+          key={id}
+          toast={{ id, title, description, ...props }}
+          onClose={() => removeToast(id)}
+        />
+      ))}
       <ToastViewport />
     </ToastProvider>
-  )
+  );
 }

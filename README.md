@@ -33,8 +33,21 @@ PrivacyShield is an advanced application for detecting and neutralizing potentia
    vercel login
    ```
 
-3. Deploy the application:
+3. Use the deployment script to avoid file conflicts:
    ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
+
+   This script will:
+   - Check for and remove conflicting files
+   - Run the Vercel deployment process
+
+   Alternatively, you can manually remove conflicting files and then deploy:
+   ```bash
+   # Remove conflicting files
+   rm -f api/index.js
+   # Deploy
    vercel
    ```
 
@@ -42,21 +55,30 @@ PrivacyShield is an advanced application for detecting and neutralizing potentia
 
 #### Option 2: Deploy from the Vercel Dashboard
 
-1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket).
+1. **Important**: Before pushing to your repository, make sure to remove the conflicting file:
+   ```bash
+   rm -f api/index.js
+   ```
 
-2. Log in to your [Vercel Dashboard](https://vercel.com/dashboard).
+2. Push your code to a Git repository (GitHub, GitLab, or Bitbucket).
 
-3. Click "New Project".
+3. Log in to your [Vercel Dashboard](https://vercel.com/dashboard).
 
-4. Import your repository.
+4. Click "New Project".
 
-5. Configure your project:
+5. Import your repository.
+
+6. Configure your project:
    - Framework Preset: Vite
    - Build Command: `npm run vercel-build`
    - Output Directory: `dist`
    - Install Command: `npm install`
 
-6. Click "Deploy".
+7. Add this to the Build & Development Settings:
+   - Add an Override for the Install Command: `rm -f api/index.js && npm install`
+   This will ensure the conflicting file is removed during the build process.
+
+8. Click "Deploy".
 
 ### Environment Variables
 
@@ -98,6 +120,40 @@ To start the production server:
 ```bash
 npm start
 ```
+
+## Troubleshooting
+
+### Vercel Deployment Errors
+
+#### File Conflicts
+
+If you encounter this error:
+```
+Error: Two or more files have conflicting paths or names. Please make sure path segments and filenames, without their extension, are unique. The path "api/index.js" has conflicts with "api/index.ts".
+```
+
+This is caused by having both `api/index.js` and `api/index.ts` in the same directory. To fix this:
+
+1. Remove the conflicting file:
+   ```bash
+   rm -f api/index.js
+   ```
+
+2. Use the deployment script:
+   ```bash
+   ./deploy.sh
+   ```
+
+3. Or modify your Vercel project settings to include a pre-install command:
+   ```
+   rm -f api/index.js
+   ```
+
+#### Other Issues
+
+- Make sure all dependencies are correctly installed
+- Check that your environment variables are properly set
+- Verify that your build commands are correct
 
 ## License
 

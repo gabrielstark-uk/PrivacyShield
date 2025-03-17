@@ -1,5 +1,20 @@
 import { useState } from 'react';
 
+// Define the NetworkInformation interface that's missing in standard TypeScript types
+interface NetworkInformation {
+  type?: string;
+  effectiveType?: string;
+  downlinkMax?: number;
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+}
+
+// Extend Navigator interface to include connection property
+interface ExtendedNavigator extends Navigator {
+  connection?: NetworkInformation;
+}
+
 interface SpywareScanResult {
   type: 'microphone' | 'camera' | 'process' | 'network';
   status: 'suspicious' | 'clean';
@@ -53,9 +68,10 @@ export function useSpywareScanner() {
       }
     }
 
-    // Network connection check
-    if (navigator.connection) {
-      const conn = navigator.connection as any;
+    // Network connection check - using the extended navigator type
+    const extendedNavigator = navigator as ExtendedNavigator;
+    if (extendedNavigator.connection) {
+      const conn = extendedNavigator.connection;
       if (conn.type === 'cellular' || conn.saveData) {
         scanResults.push({
           type: 'network',

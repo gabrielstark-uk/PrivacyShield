@@ -3,9 +3,19 @@
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/mock-api.js": {
+      "memory": 512,
+      "maxDuration": 5
+    },
+    "api/redirect.js": {
+      "memory": 128,
+      "maxDuration": 2
     }
   },
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.ts" }
+    { "src": "/api/(.*)", "dest": "/api/index.ts" },
+    { "src": "/mock-api/(.*)", "dest": "/api/mock-api.js" },
+    { "src": "/api-legacy/(.*)", "dest": "/api/redirect.js" }
   ]
 }

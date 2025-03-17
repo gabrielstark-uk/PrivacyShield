@@ -1,8 +1,28 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "dist",
+  "buildCommand": "rm -f api/index.js && npm run vercel-build",
+  "installCommand": "rm -f api/index.js && npm install",
   "framework": "vite",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/mock-api.js": {
+      "memory": 512,
+      "maxDuration": 5
+    },
+    "api/redirect.js": {
+      "memory": 128,
+      "maxDuration": 2
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.ts" },
+    { "source": "/mock-api/:path*", "destination": "/api/mock-api.js" },
+    { "source": "/api-legacy/:path*", "destination": "/api/redirect.js" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -1,0 +1,13 @@
+// THIS FILE SHOULD BE DELETED BEFORE DEPLOYMENT
+// Having both index.js and index.ts in the same directory causes conflicts in Vercel
+
+// The functionality from this file has been moved to:
+// 1. mock-api.js - For the mock API implementation
+// 2. redirect.js - For handling redirects
+
+// IMPORTANT: Delete this file before deploying to Vercel!
+// You can use one of these commands:
+// - rm -f api/index.js
+// - ./deploy.sh (which will remove this file automatically)
+
+// See the README.md for more information on deployment.
