@@ -13,14 +13,8 @@ export default defineConfig({
     react(),
     runtimeErrorOverlay(),
     themePlugin(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-        ]
-      : []),
+    // Removed dynamic import with await that was causing issues
+    // If you need cartographer in development, install it as a regular import
   ],
   resolve: {
     alias: {

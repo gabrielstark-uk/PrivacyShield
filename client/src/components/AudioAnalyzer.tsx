@@ -4,6 +4,7 @@ import { useAudioAnalyzer } from "@/hooks/use-audio-analyzer";
 import { FrequencyDisplay } from "./FrequencyDisplay";
 import { ThreatReporting } from "./ThreatReporting";
 import { FrequencyTracker } from "./FrequencyTracker";
+import { CombinedThreatAlert } from "./CombinedThreatAlert";
 import { Mic, MicOff, Zap } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Shield } from "lucide-react";
@@ -43,6 +44,14 @@ export function AudioAnalyzer() {
 
   const [laserDetected, setLaserDetected] = useState(false);
   const [signalStrength, setSignalStrength] = useState(0);
+
+  // State for tracking locked threats
+  const [v2kLocked, setV2kLocked] = useState(false);
+  const [soundCannonLocked, setSoundCannonLocked] = useState(false);
+  const [v2kFrequency, setV2kFrequency] = useState<number | null>(null);
+  const [soundCannonFrequency, setSoundCannonFrequency] = useState<number | null>(null);
+  const [v2kLockTime, setV2kLockTime] = useState<Date | null>(null);
+  const [soundCannonLockTime, setSoundCannonLockTime] = useState<Date | null>(null);
 
   // State for debouncing laser detection
   const [laserDetectionCount, setLaserDetectionCount] = useState(0);
@@ -101,6 +110,34 @@ export function AudioAnalyzer() {
     }
   }, [isThreatActive, isFrequencyLocked, threatType, lockFrequency]);
 
+  // Track when threats are locked and unlocked
+  useEffect(() => {
+    if (isFrequencyLocked && lockedThreatType) {
+      if (lockedThreatType === 'v2k') {
+        setV2kLocked(true);
+        setV2kFrequency(lockedFrequency);
+        setV2kLockTime(trackingStartTime);
+      } else if (lockedThreatType === 'sound-cannon') {
+        setSoundCannonLocked(true);
+        setSoundCannonFrequency(lockedFrequency);
+        setSoundCannonLockTime(trackingStartTime);
+      }
+    } else {
+      // If frequency is unlocked, check which threat type was previously locked
+      if (!isFrequencyLocked) {
+        if (lockedThreatType === 'v2k') {
+          setV2kLocked(false);
+          setV2kFrequency(null);
+          setV2kLockTime(null);
+        } else if (lockedThreatType === 'sound-cannon') {
+          setSoundCannonLocked(false);
+          setSoundCannonFrequency(null);
+          setSoundCannonLockTime(null);
+        }
+      }
+    }
+  }, [isFrequencyLocked, lockedThreatType, lockedFrequency, trackingStartTime]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -129,7 +166,20 @@ export function AudioAnalyzer() {
               </Select>
               <Button
                 variant={isRecording ? "destructive" : "default"}
-                onClick={isRecording ? stopRecording : startRecording}
+                onClick={() => {
+                  if (isRecording) {
+                    // Reset our local state when stopping recording
+                    setV2kLocked(false);
+                    setSoundCannonLocked(false);
+                    setV2kFrequency(null);
+                    setSoundCannonFrequency(null);
+                    setV2kLockTime(null);
+                    setSoundCannonLockTime(null);
+                    stopRecording();
+                  } else {
+                    startRecording();
+                  }
+                }}
                 disabled={!selectedMicrophone}
               >
                 {isRecording ? (
@@ -197,14 +247,25 @@ export function AudioAnalyzer() {
         </CardContent>
       </Card>
 
+      {/* Combined Threat Alert - Shows when both V2K and Sound Cannon are locked */}
+      {isRecording && v2kLocked && soundCannonLocked && (
+        <CombinedThreatAlert
+          v2kFrequency={v2kFrequency}
+          soundCannonFrequency={soundCannonFrequency}
+          v2kStartTime={v2kLockTime}
+          soundCannonStartTime={soundCannonLockTime}
+        />
+      )}
+
       {/* Frequency Tracker - Shows when a frequency is locked */}
-      {isRecording && isFrequencyLocked && (
+      {isRecording && isFrequencyLocked && !(v2kLocked && soundCannonLocked) && (
         <FrequencyTracker
           isActive={isFrequencyLocked}
           frequency={lockedFrequency}
           threatType={lockedThreatType}
           startTime={trackingStartTime}
           onUnlock={unlockFrequency}
+          signalStrength={signalStrength}
         />
       )}
 

@@ -1,3 +1,10 @@
 {
-    "zencoder.enableRepoIndexing": true
+    "zencoder.enableRepoIndexing": true,
+    "css.validate": false,
+    "scss.validate": false,
+    "less.validate": false,
+    "stylelint.validate": ["css", "scss"],
+    "editor.quickSuggestions": {
+        "strings": true
+    }
 }
