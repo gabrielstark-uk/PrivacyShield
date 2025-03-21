@@ -20,8 +20,6 @@
     "update-deps": "chmod +x scripts/update-dependencies.sh && ./scripts/update-dependencies.sh",
     "verify-deps": "chmod +x scripts/verify-dependencies.sh && ./scripts/verify-dependencies.sh",
     "fix-deps": "chmod +x scripts/fix-dependencies.sh && ./scripts/fix-dependencies.sh",
-    "generate-lockfile": "chmod +x scripts/generate-lockfile.sh && ./scripts/generate-lockfile.sh",
-    "check-build": "chmod +x scripts/check-build.sh && ./scripts/check-build.sh",
     "docker:build": "docker-compose build",
     "docker:start": "docker-compose up -d",
     "docker:stop": "docker-compose down",
@@ -120,13 +118,13 @@
     "@types/ws": "^8.5.10",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
-    "drizzle-kit": "^0.19.1",
-    "esbuild": "^0.25.1",
+    "drizzle-kit": "^0.20.13",
+    "esbuild": "^0.19.11",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.3.3",
     "tsx": "^4.7.0",
     "typescript": "5.3.3",
-    "vite": "^6.2.2"
+    "vite": "^5.0.11"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

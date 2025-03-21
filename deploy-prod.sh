@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# PrivacyShield Docker Deployment Script
-# This script builds and deploys the PrivacyShield application using Docker
+# PrivacyShield Production Deployment Script
+# This script builds and deploys the PrivacyShield application in production mode
 
-echo "🛡️ PrivacyShield Docker Deployment Script 🛡️"
-echo "-------------------------------------------"
+echo "🛡️ PrivacyShield Production Deployment Script 🛡️"
+echo "-----------------------------------------------"
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -37,16 +37,36 @@ if [ ! -f ".env" ]; then
     read
 fi
 
+# Ensure required environment variables are set
+if [ -z "$SESSION_SECRET" ]; then
+    echo "⚠️ SESSION_SECRET environment variable is not set."
+    echo "⚠️ Generating a random SESSION_SECRET..."
+    export SESSION_SECRET=$(openssl rand -hex 32)
+    echo "export SESSION_SECRET=$SESSION_SECRET" >> .env
+fi
+
+if [ -z "$DB_PASSWORD" ]; then
+    echo "⚠️ DB_PASSWORD environment variable is not set."
+    echo "⚠️ Generating a random DB_PASSWORD..."
+    export DB_PASSWORD=$(openssl rand -hex 16)
+    echo "export DB_PASSWORD=$DB_PASSWORD" >> .env
+fi
+
 # Check if SSL certificates exist, if not generate them
 if [ ! -f "ssl/privacyshield.crt" ] || [ ! -f "ssl/privacyshield.key" ]; then
     echo "⚠️ SSL certificates not found. Generating self-signed certificates..."
     mkdir -p ssl
     npm run generate-ssl
+    echo "⚠️ Self-signed certificates generated. For production, replace these with real certificates."
+    echo "⚠️ Press Enter to continue or Ctrl+C to abort."
+    read
 fi
+
+# Create logs directory
+mkdir -p logs/nginx
 
 # Create necessary directories
 mkdir -p migrations dist
-mkdir -p logs/nginx
 
 # Fix dependencies and generate lockfile
 echo "🔧 Fixing dependencies..."
@@ -60,11 +80,11 @@ echo "📦 Installing dependencies..."
 npm install
 
 # Build the application
-echo "🏗️ Building the application..."
+echo "🏗️ Building the application for production..."
 npm run build
 
 if [ $? -ne 0 ]; then
-    echo "❌ Application build failed. Please fix the errors and try again."
+    echo "❌ Build failed. Please fix the errors and try again."
     exit 1
 fi
 
@@ -77,11 +97,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Application build completed successfully"
+echo "✅ Build completed successfully"
 
-# Build Docker containers
+# Build and start the Docker containers
 echo "🏗️ Building Docker containers..."
-docker-compose build
+docker-compose -f docker-compose.prod.yml build
 
 if [ $? -ne 0 ]; then
     echo "❌ Docker build failed. Please fix the errors and try again."
@@ -92,7 +112,7 @@ echo "✅ Docker build completed successfully"
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-docker-compose run --rm app sh -c "npx drizzle-kit push"
+docker-compose -f docker-compose.prod.yml run --rm app sh -c "npx drizzle-kit push"
 
 if [ $? -ne 0 ]; then
     echo "⚠️ Database migrations may have failed. Check the output above."
@@ -102,7 +122,7 @@ fi
 
 # Initialize database with default data
 echo "🔄 Initializing database with default data..."
-docker-compose run --rm -e ADMIN_EMAIL=${ADMIN_EMAIL:-admin@privacyshield.com} -e ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123!} app sh -c "npm run db:init"
+docker-compose -f docker-compose.prod.yml run --rm -e ADMIN_EMAIL=${ADMIN_EMAIL:-admin@privacyshield.com} -e ADMIN_PASSWORD=${ADMIN_PASSWORD:-$(openssl rand -hex 12)} app sh -c "npm run db:init"
 
 if [ $? -ne 0 ]; then
     echo "⚠️ Database initialization may have failed. Check the output above."
@@ -112,19 +132,29 @@ fi
 
 # Start the application
 echo "🚀 Starting PrivacyShield in production mode..."
-docker-compose up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 if [ $? -ne 0 ]; then
     echo "❌ Failed to start Docker containers. Please check the logs."
     exit 1
 fi
 
-echo "✅ PrivacyShield is now running in Docker containers"
-echo "📡 The application should be available at http://localhost:3000"
+echo "✅ PrivacyShield is now running in production mode"
+echo "📡 The application should be available at https://your-domain.com"
 echo ""
 echo "📋 Useful commands:"
-echo "  - View logs: docker-compose logs -f"
-echo "  - Stop application: docker-compose down"
-echo "  - Restart application: docker-compose restart"
+echo "  - View logs: docker-compose -f docker-compose.prod.yml logs -f"
+echo "  - Stop application: docker-compose -f docker-compose.prod.yml down"
+echo "  - Restart application: docker-compose -f docker-compose.prod.yml restart"
 echo ""
-echo "🔒 PrivacyShield deployment completed successfully!"
+echo "🔒 PrivacyShield production deployment completed successfully!"
+
+# Display admin credentials if they were generated
+if [ -n "$ADMIN_PASSWORD" ] && [ "$ADMIN_PASSWORD" != "Admin123!" ]; then
+    echo ""
+    echo "🔑 Admin credentials:"
+    echo "  - Email: ${ADMIN_EMAIL:-admin@privacyshield.com}"
+    echo "  - Password: $ADMIN_PASSWORD"
+    echo ""
+    echo "⚠️ Please save these credentials securely and change the password after first login."
+fi

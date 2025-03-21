@@ -16,7 +16,7 @@ PrivacyShield is an advanced application for detecting and neutralizing potentia
 
 - A [Vercel](https://vercel.com) account
 - [Git](https://git-scm.com/) installed on your computer
-- [Node.js](https://nodejs.org/) (version 18 or higher)
+- [Node.js](https://nodejs.org/) (version 20 or higher)
 - [Vercel CLI](https://vercel.com/docs/cli) (optional)
 
 ### Deployment Steps
@@ -109,6 +109,8 @@ For production deployment, you may need to set the following environment variabl
 
 ## Building for Production
 
+### Standard Build
+
 To build the application for production:
 
 ```bash
@@ -120,6 +122,68 @@ To start the production server:
 ```bash
 npm start
 ```
+
+### Docker Deployment
+
+PrivacyShield can be easily deployed using Docker. We provide two deployment options:
+
+#### Development Deployment
+
+```bash
+# Make scripts executable
+chmod +x make-scripts-executable.sh
+./make-scripts-executable.sh
+
+# Deploy with Docker for development
+npm run docker:deploy
+```
+
+#### Production Deployment
+
+```bash
+# Make scripts executable
+chmod +x make-scripts-executable.sh
+./make-scripts-executable.sh
+
+# Deploy with Docker for production
+npm run docker:deploy:prod
+```
+
+For more detailed Docker deployment instructions, see [Docker Deployment Guide](README.docker.md).
+
+## Dependency Management
+
+PrivacyShield uses stable versions of all dependencies, including:
+
+- React 18.2.0
+- Express 4.18.2
+- Drizzle ORM 0.29.3
+- Tailwind CSS 3.3.3
+- TypeScript 5.3.3
+- Stripe 14.11.0
+
+To update dependencies to their latest versions:
+
+```bash
+# Make scripts executable
+chmod +x make-scripts-executable.sh
+./make-scripts-executable.sh
+
+# Update dependencies
+npm run update-deps
+```
+
+If you encounter dependency issues during deployment, you can fix them with:
+
+```bash
+# Fix dependencies
+npm run fix-deps
+
+# Generate lockfile
+npm run generate-lockfile
+```
+
+This will use a known working set of dependency versions from package.json.fixed and generate a compatible package-lock.json file.
 
 ## Troubleshooting
 
