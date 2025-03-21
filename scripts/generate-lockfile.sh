@@ -4,9 +4,6 @@
 
 echo "🔒 Generating package-lock.json file..."
 
-# Fix dependencies first
-npm run fix-deps
-
 # Generate package-lock.json
 npm install --package-lock-only
 

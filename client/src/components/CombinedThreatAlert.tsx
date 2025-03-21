@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Radio, AlertTriangle, MapPin, Shield, Zap, Target, Clock, Satellite, Wifi, Server, Cpu, AlertCircle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Progress } from "./ui/progress";
+import { Button } from "./ui/button";
 
 interface CombinedThreatAlertProps {
   v2kFrequency: number | null;
@@ -25,7 +25,6 @@ export function CombinedThreatAlert({
     accuracy: number;
   } | null>(null);
 
-  // State for tracking police response
   const [policeResponse, setPoliceResponse] = useState<{
     status: 'connecting' | 'transmitting' | 'confirmed' | 'tracking';
     caseNumber?: string;
@@ -43,10 +42,9 @@ export function CombinedThreatAlert({
     status: 'connecting'
   });
 
-  // State for tracking elapsed time
   const [elapsedTime, setElapsedTime] = useState<string>("00:00:00");
+  const [laserDeactivated, setLaserDeactivated] = useState<boolean>(false); // New state for laser deactivation
 
-  // Get current location with high accuracy
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -69,32 +67,25 @@ export function CombinedThreatAlert({
     }
   }, []);
 
-  // Simulate police response process
   useEffect(() => {
-    // Step 1: Connecting to emergency services
     const connectingTimeout = setTimeout(() => {
       setPoliceResponse({
         status: 'transmitting'
       });
 
-      // Step 2: Transmitting data
       const transmittingTimeout = setTimeout(() => {
-        // Generate a realistic case number
         const caseNumber = `${new Date().getFullYear()}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
-
-        // Calculate threat source location based on triangulation
         const threatSourceLocation = simulateTriangulation();
 
         setPoliceResponse({
           status: 'confirmed',
           caseNumber,
           respondingUnit: `Mobile Patrol Unit ${Math.floor(Math.random() * 50) + 1}`,
-          estimatedArrival: Math.floor(Math.random() * 10) + 5, // 5-15 minutes
+          estimatedArrival: Math.floor(Math.random() * 10) + 5,
           threatSourceLocation,
           deviceType: determineDeviceType(v2kFrequency || 0, soundCannonFrequency || 0)
         });
 
-        // Step 3: Begin continuous tracking
         const trackingTimeout = setTimeout(() => {
           setPoliceResponse(prev => ({
             ...prev,
@@ -111,7 +102,6 @@ export function CombinedThreatAlert({
     return () => clearTimeout(connectingTimeout);
   }, [v2kFrequency, soundCannonFrequency]);
 
-  // Update elapsed time since detection
   useEffect(() => {
     const startTime = v2kStartTime && soundCannonStartTime
       ? new Date(Math.min(v2kStartTime.getTime(), soundCannonStartTime.getTime()))
@@ -120,8 +110,6 @@ export function CombinedThreatAlert({
     const updateElapsedTime = () => {
       const now = new Date();
       const elapsed = now.getTime() - startTime.getTime();
-
-      // Format as HH:MM:SS
       const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
       const minutes = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
       const seconds = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
@@ -129,20 +117,14 @@ export function CombinedThreatAlert({
       setElapsedTime(`${hours}:${minutes}:${seconds}`);
     };
 
-    // Update immediately
     updateElapsedTime();
-
-    // Then update every second
     const interval = setInterval(updateElapsedTime, 1000);
-
     return () => clearInterval(interval);
   }, [v2kStartTime, soundCannonStartTime]);
 
-  // Simulate triangulation of threat source
   const simulateTriangulation = () => {
     if (!location) return undefined;
 
-    // Generate a realistic direction
     const directions = [
       'North', 'North-Northeast', 'Northeast', 'East-Northeast',
       'East', 'East-Southeast', 'Southeast', 'South-Southeast',
@@ -150,17 +132,13 @@ export function CombinedThreatAlert({
       'West', 'West-Northwest', 'Northwest', 'North-Northwest'
     ];
     const direction = directions[Math.floor(Math.random() * directions.length)];
-
-    // Generate a realistic distance (50-500 meters)
     const distanceMeters = Math.floor(Math.random() * 450) + 50;
     const distanceStr = `${distanceMeters} meters`;
 
-    // Calculate approximate coordinates based on direction and distance
-    const earthRadius = 6371000; // meters
+    const earthRadius = 6371000;
     const degreesToRadians = Math.PI / 180;
     const radiansToDegrees = 180 / Math.PI;
 
-    // Convert direction to bearing in degrees
     let bearing = 0;
     switch (direction) {
       case 'North': bearing = 0; break;
@@ -181,14 +159,10 @@ export function CombinedThreatAlert({
       case 'North-Northwest': bearing = 337.5; break;
     }
 
-    // Convert to radians
     const bearingRad = bearing * degreesToRadians;
-
-    // Current location in radians
     const lat1 = location.latitude * degreesToRadians;
     const lon1 = location.longitude * degreesToRadians;
 
-    // Calculate new position
     const distanceRatio = distanceMeters / earthRadius;
     const lat2 = Math.asin(
       Math.sin(lat1) * Math.cos(distanceRatio) +
@@ -199,7 +173,6 @@ export function CombinedThreatAlert({
       Math.cos(distanceRatio) - Math.sin(lat1) * Math.sin(lat2)
     );
 
-    // Convert back to degrees
     const newLat = lat2 * radiansToDegrees;
     const newLon = lon2 * radiansToDegrees;
 
@@ -208,11 +181,10 @@ export function CombinedThreatAlert({
       longitude: newLon,
       direction,
       distance: distanceStr,
-      accuracy: Math.max(5, Math.min(30, distanceMeters * 0.1)) // 10% of distance, between 5-30m
+      accuracy: Math.max(5, Math.min(30, distanceMeters * 0.1))
     };
   };
 
-  // Determine device type based on frequencies
   const determineDeviceType = (v2kFreq: number, soundCannonFreq: number): string => {
     const frequencyRatio = v2kFreq / soundCannonFreq;
     const frequencySum = v2kFreq + soundCannonFreq;
@@ -230,7 +202,6 @@ export function CombinedThreatAlert({
     }
   };
 
-  // Format coordinates for display
   const formatCoordinates = (lat: number, lng: number): string => {
     const latDir = lat >= 0 ? "N" : "S";
     const lngDir = lng >= 0 ? "E" : "W";
@@ -241,7 +212,6 @@ export function CombinedThreatAlert({
     return `${latDeg}° ${latDir}, ${lngDeg}° ${lngDir}`;
   };
 
-  // Get status indicator based on current state
   const getStatusIndicator = () => {
     switch (policeResponse.status) {
       case 'connecting':
@@ -305,7 +275,6 @@ export function CombinedThreatAlert({
           </AlertDescription>
         </Alert>
 
-        {/* Status indicator */}
         <div className="border rounded-md p-3 bg-slate-100">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -353,7 +322,6 @@ export function CombinedThreatAlert({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Your location */}
           <div className="border rounded-md p-3">
             <div className="flex items-center gap-2 mb-1">
               <MapPin className="h-4 w-4 text-blue-500" />
@@ -369,7 +337,6 @@ export function CombinedThreatAlert({
             )}
           </div>
 
-          {/* Threat source location */}
           {policeResponse.threatSourceLocation && (
             <div className="border rounded-md p-3 bg-red-50">
               <div className="flex items-center gap-2 mb-1">
@@ -388,7 +355,6 @@ export function CombinedThreatAlert({
           )}
         </div>
 
-        {/* Device information */}
         {policeResponse.deviceType && policeResponse.status === 'tracking' && (
           <div className="border rounded-md p-3 bg-slate-50">
             <div className="flex items-center gap-2 mb-1">
@@ -403,7 +369,6 @@ export function CombinedThreatAlert({
           </div>
         )}
 
-        {/* Responding unit */}
         {policeResponse.respondingUnit && policeResponse.status === 'tracking' && (
           <div className="border rounded-md p-3 bg-green-50">
             <div className="flex items-center gap-2 mb-1">
@@ -417,12 +382,12 @@ export function CombinedThreatAlert({
             </p>
           </div>
         )}
-{
-  policeResponse.status !== 'tracking' &&
-  <Button onClick={() => setPoliceResponse(prev => ({...prev, status: 'tracking'}))}>
-    Confirm Police Response
-  </Button>
-}
+        {
+          policeResponse.status !== 'tracking' &&
+          <Button onClick={() => setPoliceResponse(prev => ({...prev, status: 'tracking'}))}>
+            Confirm Police Response
+          </Button>
+        }
 
         <div className="border rounded-md p-3">
           <p className="text-sm">

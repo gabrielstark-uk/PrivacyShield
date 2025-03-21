@@ -3,9 +3,99 @@ import Stripe from "stripe";
 import { storage } from "./storage";
 import { log } from "./vite";
 
-// Initialize Stripe with your secret key
-// In production, this should be stored in an environment variable
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_test_key', {
+// Function to initialize default subscription plans
+export async function initializeSubscriptionPlans() {
+  try {
+    // Free tier
+    await storage.createSubscriptionPlan({
+      name: 'Free',
+      description: 'Basic protection for personal use',
+      price: 0,
+      interval: 'monthly',
+      tier: 'free',
+      features: [
+        'Basic frequency monitoring',
+        'Manual threat detection',
+        'Limited reports history (7 days)',
+        'Community support'
+      ],
+      active: true
+    });
+
+    // Basic tier
+    await storage.createSubscriptionPlan({
+      name: 'Basic',
+      description: 'Enhanced protection for individuals',
+      price: 999, // $9.99
+      interval: 'monthly',
+      tier: 'basic',
+      features: [
+        'Advanced frequency monitoring',
+        'Automatic threat detection',
+        'Extended reports history (30 days)',
+        'Email alerts',
+        'Basic countermeasures',
+        'Email support'
+      ],
+      active: true
+    });
+
+    // Premium tier
+    await storage.createSubscriptionPlan({
+      name: 'Premium',
+      description: 'Professional protection for advanced users',
+      price: 2999, // $29.99
+      interval: 'monthly',
+      tier: 'premium',
+      features: [
+        'Professional frequency monitoring',
+        'Real-time threat detection',
+        'Unlimited reports history',
+        'SMS & Email alerts',
+        'Advanced countermeasures',
+        'Frequency locking & tracking',
+        'Priority email support',
+        'Authorities notification'
+      ],
+      active: true
+    });
+
+    // Enterprise tier
+    await storage.createSubscriptionPlan({
+      name: 'Enterprise',
+      description: 'Complete protection for organizations',
+      price: 9999, // $99.99
+      interval: 'monthly',
+      tier: 'enterprise',
+      features: [
+        'Enterprise-grade frequency monitoring',
+        'Real-time threat detection & analysis',
+        'Unlimited reports history & analytics',
+        'SMS, Email & Phone alerts',
+        'Military-grade countermeasures',
+        'Advanced frequency locking & tracking',
+        'Dedicated support team',
+        'Priority authorities notification',
+        'Custom integration options',
+        'Multiple user accounts'
+      ],
+      active: true
+    });
+
+    log('Default subscription plans created successfully');
+  } catch (error) {
+    console.error('Error creating default subscription plans:', error);
+    throw error;
+  }
+}
+
+// Initialize Stripe with your secret key from environment variable
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  console.error('WARNING: STRIPE_SECRET_KEY environment variable is not set. Stripe functionality will not work correctly.');
+}
+
+const stripe = new Stripe(stripeSecretKey || '', {
   apiVersion: '2023-10-16',
 });
 
@@ -14,10 +104,97 @@ export function setupStripe(app: Router) {
   app.get('/api/subscription-plans', async (_req, res) => {
     try {
       const plans = await storage.getActiveSubscriptionPlans();
+
+      // If no plans are found, initialize default plans
+      if (!plans || plans.length === 0) {
+        console.log('No subscription plans found. Creating default plans...');
+
+        // Create default plans
+        await initializeSubscriptionPlans();
+
+        // Fetch plans again
+        const newPlans = await storage.getActiveSubscriptionPlans();
+        return res.json({ plans: newPlans });
+      }
+
       res.json({ plans });
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
       res.status(500).json({ message: 'Error fetching subscription plans' });
+    }
+  });
+
+  // Admin endpoint to check subscription plans
+  app.get('/api/admin/subscription-plans', async (req, res) => {
+    try {
+      // Require authentication
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Check if user is an admin
+      const userId = (req.user as any).id;
+      const user = await storage.getUserById(userId);
+
+      if (user.subscriptionTier !== 'enterprise') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const allPlans = await storage.getSubscriptionPlans();
+      const activePlans = await storage.getActiveSubscriptionPlans();
+
+      res.json({
+        allPlans,
+        activePlans,
+        count: {
+          all: allPlans.length,
+          active: activePlans.length
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching subscription plans:', error);
+      res.status(500).json({ message: 'Error fetching subscription plans' });
+    }
+  });
+
+  // Endpoint to manually initialize subscription plans (admin only)
+  app.post('/api/admin/initialize-plans', async (req, res) => {
+    try {
+      // Require authentication
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+      }
+
+      // Check if user is an admin
+      const userId = (req.user as any).id;
+      const user = await storage.getUserById(userId);
+
+      if (user.subscriptionTier !== 'enterprise') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access required'
+        });
+      }
+
+      // Initialize subscription plans
+      await initializeSubscriptionPlans();
+      const plans = await storage.getActiveSubscriptionPlans();
+
+      res.json({
+        success: true,
+        message: 'Subscription plans initialized successfully',
+        plans
+      });
+    } catch (error) {
+      console.error('Error initializing subscription plans:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error initializing subscription plans',
+        error: String(error)
+      });
     }
   });
   
@@ -128,16 +305,22 @@ export function setupStripe(app: Router) {
   // Handle webhook events from Stripe
   app.post('/api/webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'] as string;
-    
+
+    // Check if webhook secret is configured
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('ERROR: STRIPE_WEBHOOK_SECRET environment variable is not set. Webhook verification will fail.');
+      return res.status(500).send('Webhook Error: Webhook secret not configured');
+    }
+
     let event;
-    
+
     try {
-      // Verify the event came from Stripe
-      // In production, you should use a webhook secret
+      // Verify the event came from Stripe using the webhook secret
       event = stripe.webhooks.constructEvent(
         req.body,
         sig,
-        process.env.STRIPE_WEBHOOK_SECRET || 'whsec_your_webhook_secret'
+        webhookSecret
       );
     } catch (err) {
       console.error('Webhook signature verification failed:', err);

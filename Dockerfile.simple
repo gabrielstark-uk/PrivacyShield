@@ -22,28 +22,7 @@ RUN npm run build || echo "Build failed, will use minimal server"
 RUN echo "Build output:" && \
     ls -la && \
     echo "Dist directory:" && \
-    ls -la dist || echo "Dist directory not found or empty" (continue on error)
-RUN npm run build || echo "Build failed, will use minimal server"
-
-# Debug build output
-RUN echo "Build output:" && \
-    ls -la && \
-    echo "Dist directory:" && \
     ls -la dist || echo "Dist directory not found or empty"
-
-# Create minimal server if build failed
-RUN if [ ! -s "dist/index.js" ]; then \
-      echo "Creating minimal server..." && \
-      mkdir -p dist && \
-      cp server/minimal.js dist/index.js && \
-      echo "Minimal server created"; \
-    fi
-
-# Check if the build was successful
-RUN ls -la dist && \
-    [ -d "dist" ] && \
-    [ "$(ls -A dist)" ] && \
-    echo "✅ Build artifacts verified successfully!"
 
 # Create minimal server if build failed
 RUN if [ ! -s "dist/index.js" ]; then \

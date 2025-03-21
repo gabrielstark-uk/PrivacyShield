@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    volumes:
+      - ./dist:/app/dist
+      - ./migrations:/app/migrations
+    environment:
+      - NODE_ENV=development
+      - DEBUG=true

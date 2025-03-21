@@ -20,12 +20,17 @@
     "update-deps": "chmod +x scripts/update-dependencies.sh && ./scripts/update-dependencies.sh",
     "verify-deps": "chmod +x scripts/verify-dependencies.sh && ./scripts/verify-dependencies.sh",
     "fix-deps": "chmod +x scripts/fix-dependencies.sh && ./scripts/fix-dependencies.sh",
+    "generate-lockfile": "chmod +x scripts/generate-lockfile.sh && ./scripts/generate-lockfile.sh",
+    "check-build": "chmod +x scripts/check-build.sh && ./scripts/check-build.sh",
     "docker:build": "docker-compose build",
     "docker:start": "docker-compose up -d",
     "docker:stop": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:deploy": "chmod +x deploy.sh && ./deploy.sh",
-    "docker:deploy:prod": "chmod +x deploy-prod.sh && ./deploy-prod.sh"
+    "docker:deploy:prod": "chmod +x deploy-prod.sh && ./deploy-prod.sh",
+    "fix-and-deploy": "chmod +x fix-and-deploy.sh && ./fix-and-deploy.sh",
+    "docker:build:simple": "chmod +x docker-build-simple.sh && ./docker-build-simple.sh",
+    "docker:build:minimal": "chmod +x docker-build-minimal.sh && ./docker-build-minimal.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.1",

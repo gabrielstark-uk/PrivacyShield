@@ -383,11 +383,33 @@ const Pricing = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await fetch('/api/subscription-plans');
-        if (!response.ok) {
-          throw new Error('Failed to fetch subscription plans');
+        setLoading(true);
+
+        // Add retry logic for production resilience
+        let retries = 3;
+        let response;
+
+        while (retries > 0) {
+          response = await fetch('/api/subscription-plans');
+          if (response.ok) break;
+
+          retries--;
+          if (retries > 0) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+          }
         }
+
+        if (!response || !response.ok) {
+          throw new Error(`Failed to fetch subscription plans: ${response?.status} ${response?.statusText}`);
+        }
+
         const data = await response.json();
+
+        if (!data.plans || !Array.isArray(data.plans)) {
+          throw new Error('Invalid subscription plans data received');
+        }
+
         setPlans(data.plans);
       } catch (error) {
         console.error('Error fetching plans:', error);
@@ -401,13 +423,25 @@ const Pricing = () => {
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/auth/me');
+
         if (response.ok) {
           setIsAuthenticated(true);
+
           // Fetch current subscription
-          const subscriptionResponse = await fetch('/api/user/subscription');
-          if (subscriptionResponse.ok) {
-            const data = await subscriptionResponse.json();
-            setCurrentSubscription(data.subscription.tier);
+          try {
+            const subscriptionResponse = await fetch('/api/user/subscription');
+
+            if (subscriptionResponse.ok) {
+              const data = await subscriptionResponse.json();
+
+              if (data.subscription && data.subscription.tier) {
+                setCurrentSubscription(data.subscription.tier);
+              }
+            } else {
+              console.warn('Failed to fetch subscription details:', subscriptionResponse.status);
+            }
+          } catch (subError) {
+            console.error('Error fetching subscription:', subError);
           }
         }
       } catch (error) {
@@ -422,6 +456,8 @@ const Pricing = () => {
   // Handle subscription
   const handleSubscribe = async (planId: number) => {
     if (!isAuthenticated) {
+      // Save the intended plan ID in session storage for after login
+      sessionStorage.setItem('intended_plan_id', planId.toString());
       // Redirect to login page
       window.location.href = '/login?redirect=/pricing';
       return;
@@ -429,31 +465,54 @@ const Pricing = () => {
 
     setCheckoutLoading(planId);
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ planId }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to create checkout session: ${response.status}`);
       }
 
       const data = await response.json();
 
       // If there's a URL, redirect to Stripe checkout
       if (data.url) {
+        // Save current page to return to after payment
+        sessionStorage.setItem('return_to_after_payment', window.location.pathname);
         window.location.href = data.url;
       } else if (data.success) {
         // For free plans, just show success and redirect
-        alert('Subscription updated successfully!');
+        // Use a more user-friendly notification if available
+        if (typeof window.showSuccessToast === 'function') {
+          window.showSuccessToast('Subscription updated successfully!');
+        } else {
+          alert('Subscription updated successfully!');
+        }
         window.location.href = data.redirectUrl || '/dashboard';
+      } else {
+        throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      alert('Failed to process subscription. Please try again later.');
+
+      // Use a more user-friendly error notification if available
+      if (typeof window.showErrorToast === 'function') {
+        window.showErrorToast('Failed to process subscription. Please try again later.');
+      } else {
+        alert('Failed to process subscription. Please try again later.');
+      }
     } finally {
       setCheckoutLoading(null);
     }

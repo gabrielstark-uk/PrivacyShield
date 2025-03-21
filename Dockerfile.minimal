@@ -1,0 +1,31 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy minimal server and package files
+COPY server/minimal.js ./
+COPY package.json.fixed ./package.json
+COPY .npmrc ./
+
+# Install only essential dependencies
+RUN npm install express
+
+# Create dist directory
+RUN mkdir -p dist
+
+# Copy minimal server to dist
+RUN cp minimal.js dist/index.js
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Expose the port
+EXPOSE 3000
+
+# Create a non-root user and switch to it
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# Start the minimal server
+CMD ["node", "dist/index.js"]
